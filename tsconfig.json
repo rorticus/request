@@ -21,9 +21,10 @@
     "target": "ES5"
   },
   "include": [
-	"./node_modules/intern/typings/intern/*.d.ts",
-	"./node_modules/dojo-typings/custom/http-proxy/*.d.ts",
+    "./node_modules/intern/typings/intern/*.d.ts",
+    "./node_modules/dojo-typings/custom/http-proxy/*.d.ts",
+    "./node_modules/dojo-typings/custom/dev/*.d.ts",
     "./src/**/*.ts",
-	"./tests/**/*.ts"
+    "./tests/**/*.ts"
   ]
 }
