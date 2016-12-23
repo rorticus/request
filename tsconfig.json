@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "declaration": true,
+    "experimentalDecorators": true,
+    "lib": [ "DOM", "ES5", "ES2015.Promise", "ES2015.Symbol", "ES2015.Symbol.WellKnown", "ES2015.Iterable" ],
+    "module": "umd",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "outDir": "./_build",
+    "preserveConstEnums": true,
+    "removeComments": false,
+    "rootDir": ".",
+    "sourceMap": true,
+    "inlineSources": true,
+    "target": "ES5"
+  },
+  "include": [
+	"./node_modules/intern/typings/intern/*.d.ts",
+	"./node_modules/dojo-typings/custom/http-proxy/*.d.ts",
+    "./src/**/*.ts",
+	"./tests/**/*.ts"
+  ]
+}
