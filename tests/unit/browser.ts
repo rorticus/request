@@ -6,6 +6,7 @@ import request from '../../src/index';
 import xhr from '../../src/providers/xhr';
 
 import './providers/xhr';
+import './providers/fetch';
 
 interface EchoData {
 	method: string;

@@ -1,60 +1,71 @@
-import registerSuite from '../../object';
+import * as registerSuite from 'intern!object';
 import * as assert from 'intern/chai!assert';
-
-import * as dojo1xhr from 'dojo/request/xhr';
-
-import xhrRequest from '../../../src/providers/xhr';
-import { Response } from '../../../src/interfaces';
+import has from '../../../src/has';
+import Promise from 'dojo-shim/Promise';
+import fetchRequest from '../../../src/providers/fetch';
 import UrlSearchParams from 'dojo-core/UrlSearchParams';
-import has from 'dojo-has/has';
-import { XhrResponse } from '../../../src/providers/xhr';
 
 let echoServerAvailable = false;
-registerSuite({
-	name: 'request/providers/xhr',
 
-	before() {
-		return dojo1xhr('/__echo/', {
-			method: 'GET',
-			timeout: 10000
-		}).then(
-			response => {
-				if (response && response.statusCode === 200) {
-					echoServerAvailable = true;
-					return;
-				}
-				this.skip('Proxy unavailable');
-			},
-			() => this.skip('Proxy unavailable')
-		);
+registerSuite({
+	name: 'request/fetch',
+
+	before: function () {
+		if (has('fetch')) {
+			return new Promise(function (resolve, reject) {
+				fetchRequest('/__echo/', {
+					method: 'get',
+					timeout: 10000
+				}).then(
+					function (response) {
+						if (response && response.status === 200) {
+							echoServerAvailable = true;
+						}
+						resolve();
+					},
+					function () {
+						resolve();
+					}
+				);
+			});
+		}
 	},
 
 	'HTTP methods': {
 		specified(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/foo.json', { method: 'get' })
+			return fetchRequest('/__echo/foo.json', { method: 'get' })
 				.then(function (response: any) {
 					assert.strictEqual(response.requestOptions.method, 'get');
 				});
 		},
 
 		'default'(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/foo.json')
+			return fetchRequest('/__echo/foo.json')
 				.then(function (response: any) {
 					assert.strictEqual(response.requestOptions.method, 'GET');
 				});
 		},
 
 		'.get with URL query'(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/xhr?color=blue&numbers=one&numbers=two').then(function (response: Response) {
+			return fetchRequest('/__echo/fetch?color=blue&numbers=one&numbers=two').then(function (response: any) {
 				return response.json().then((data: any) => {
 					const query = data.query;
 					assert.deepEqual(query, {
@@ -63,20 +74,23 @@ registerSuite({
 					});
 					assert.strictEqual(
 						response.url,
-						'/__echo/xhr?color=blue&numbers=one&numbers=two'
+						'/__echo/fetch?color=blue&numbers=one&numbers=two'
 					);
 				});
 			});
 		},
 
 		'.post': function (this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/post', {
+			return fetchRequest('/__echo/post', {
 				method: 'POST',
 				body: new UrlSearchParams({ color: 'blue' }).toString()
-			}).then(function (response: Response) {
+			}).then(function (response: any) {
 				return response.json().then((data: any) => {
 					assert.strictEqual(data.method, 'POST');
 					const payload = data.payload;
@@ -90,10 +104,13 @@ registerSuite({
 
 	'request options': {
 		'"timeout"'(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/xhr?delay=5000', { timeout: 10 })
+			return fetchRequest('/__echo/fetch?delay=5000', { timeout: 10 })
 				.then(
 					function () {
 						assert(false, 'Should have timed out');
@@ -105,10 +122,13 @@ registerSuite({
 		},
 
 		'user and password'(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/foo.json', {
+			return fetchRequest('/__echo/foo.json', {
 				user: 'user',
 				password: 'password'
 			}).then(function (response: any) {
@@ -118,10 +138,13 @@ registerSuite({
 		},
 
 		'auth, without user or password'(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/foo.json', {
+			return fetchRequest('/__echo/foo.json', {
 				auth: 'user:password'
 			}).then(function (response: any) {
 				assert.strictEqual(response.requestOptions.user, 'user');
@@ -131,10 +154,13 @@ registerSuite({
 
 		'query': {
 			'.get with query URL and query option string'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
-				return xhrRequest('/__echo/xhr?color=blue&numbers=one&numbers=two', {
+				return fetchRequest('/__echo/fetch?color=blue&numbers=one&numbers=two', {
 					query: new UrlSearchParams({
 						foo: [ 'bar', 'baz' ],
 						thud: 'thonk',
@@ -152,23 +178,26 @@ registerSuite({
 						});
 						assert.strictEqual(
 							response.url,
-							'/__echo/xhr?color=blue&numbers=one&numbers=two&foo=bar&foo=baz&thud=thonk&xyzzy=3'
+							'/__echo/fetch?color=blue&numbers=one&numbers=two&foo=bar&foo=baz&thud=thonk&xyzzy=3'
 						);
 					});
 				});
 			},
 
 			'.get with query option string'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
-				return xhrRequest('/__echo/xhr', {
+				return fetchRequest('/__echo/fetch', {
 					query: new UrlSearchParams({
 						foo: [ 'bar', 'baz' ],
 						thud: 'thonk',
 						xyzzy: '3'
 					}).toString()
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						const query = data.query;
 						assert.deepEqual(query, {
@@ -178,23 +207,26 @@ registerSuite({
 						});
 						assert.strictEqual(
 							response.url,
-							'/__echo/xhr?foo=bar&foo=baz&thud=thonk&xyzzy=3'
+							'/__echo/fetch?foo=bar&foo=baz&thud=thonk&xyzzy=3'
 						);
 					});
 				});
 			},
 
 			'.get with query option object'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
-				return xhrRequest('/__echo/xhr', {
+				return fetchRequest('/__echo/fetch', {
 					query: {
 						foo: [ 'bar', 'baz' ],
 						thud: 'thonk',
 						xyzzy: '3'
 					}
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						const query = data.query;
 						assert.deepEqual(query, {
@@ -204,33 +236,36 @@ registerSuite({
 						});
 						assert.strictEqual(
 							response.url,
-							'/__echo/xhr?foo=bar&foo=baz&thud=thonk&xyzzy=3'
+							'/__echo/fetch?foo=bar&foo=baz&thud=thonk&xyzzy=3'
 						);
 					});
 				});
 			},
 
 			'.get with cacheBust w/query string w/o/query option'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
 				let cacheBustStringA: string;
 				let cacheBustStringB: string;
-				return xhrRequest('/__echo/xhr?foo=bar', {
+				return fetchRequest('/__echo/fetch?foo=bar', {
 					cacheBust: true
 				}).then(function (response: any) {
-					assert.strictEqual(response.url.indexOf('/__echo/xhr?foo=bar'), 0);
+					assert.strictEqual(response.url.indexOf('/__echo/fetch?foo=bar'), 0);
 					cacheBustStringA = response.url.split('&')[ 1 ];
 					assert.isFalse(isNaN(Number(cacheBustStringA)));
-					return new Promise<Response>(function (resolve, reject) {
+					return new Promise<any>(function (resolve, reject) {
 						setTimeout(function () {
-							xhrRequest('/__echo/xhr?foo=bar', {
+							fetchRequest('/__echo/fetch?foo=bar', {
 								cacheBust: true
 							}).then(resolve, reject);
 						}, 5);
 					});
 				}).then(function (response: any) {
-					assert.strictEqual(response.url.indexOf('/__echo/xhr?foo=bar'), 0);
+					assert.strictEqual(response.url.indexOf('/__echo/fetch?foo=bar'), 0);
 					cacheBustStringB = response.url.split('&')[ 1 ];
 					assert.isFalse(isNaN(Number(cacheBustStringB)));
 
@@ -239,24 +274,27 @@ registerSuite({
 			},
 
 			'.get with cacheBust w/query string w/query option'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
 				let cacheBustStringA: string;
 				let cacheBustStringB: string;
-				return xhrRequest('/__echo/xhr?foo=bar', {
+				return fetchRequest('/__echo/fetch?foo=bar', {
 					cacheBust: true,
 					query: {
 						bar: 'baz'
 					}
 				}).then(function (response: any) {
-					assert.strictEqual(response.url.indexOf('/__echo/xhr?foo=bar&bar=baz'), 0);
+					assert.strictEqual(response.url.indexOf('/__echo/fetch?foo=bar&bar=baz'), 0);
 					cacheBustStringA = response.url.split('&')[ 2 ];
 					assert.isFalse(isNaN(Number(cacheBustStringA)));
 
-					return new Promise<Response>(function (resolve, reject) {
+					return new Promise<any>(function (resolve, reject) {
 						setTimeout(function () {
-							xhrRequest('/__echo/xhr?foo=bar', {
+							fetchRequest('/__echo/fetch?foo=bar', {
 								cacheBust: true,
 								query: {
 									bar: 'baz'
@@ -265,7 +303,7 @@ registerSuite({
 						}, 5);
 					});
 				}).then(function (response: any) {
-					assert.strictEqual(response.url.indexOf('/__echo/xhr?foo=bar&bar=baz'), 0);
+					assert.strictEqual(response.url.indexOf('/__echo/fetch?foo=bar&bar=baz'), 0);
 					cacheBustStringB = response.url.split('&')[ 2 ];
 					assert.isFalse(isNaN(Number(cacheBustStringB)));
 
@@ -274,24 +312,27 @@ registerSuite({
 			},
 
 			'.get with cacheBust w/o/query string w/query option'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
 				let cacheBustStringA: string;
 				let cacheBustStringB: string;
-				return xhrRequest('/__echo/xhr', {
+				return fetchRequest('/__echo/fetch', {
 					cacheBust: true,
 					query: {
 						foo: 'bar'
 					}
 				}).then(function (response: any) {
-					assert.strictEqual(response.url.indexOf('/__echo/xhr?foo=bar'), 0);
+					assert.strictEqual(response.url.indexOf('/__echo/fetch?foo=bar'), 0);
 					cacheBustStringA = response.url.split('&')[ 1 ];
 					assert.isFalse(isNaN(Number(cacheBustStringA)));
 
-					return new Promise<Response>(function (resolve, reject) {
+					return new Promise<any>(function (resolve, reject) {
 						setTimeout(function () {
-							xhrRequest('/__echo/xhr', {
+							fetchRequest('/__echo/fetch', {
 								cacheBust: true,
 								query: {
 									foo: 'bar'
@@ -300,7 +341,7 @@ registerSuite({
 						}, 5);
 					});
 				}).then(function (response: any) {
-					assert.strictEqual(response.url.indexOf('/__echo/xhr?foo=bar'), 0);
+					assert.strictEqual(response.url.indexOf('/__echo/fetch?foo=bar'), 0);
 					cacheBustStringB = response.url.split('&')[ 1 ];
 					assert.isFalse(isNaN(Number(cacheBustStringB)));
 
@@ -309,19 +350,22 @@ registerSuite({
 			},
 
 			'.get with cacheBust and no query'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
 				let cacheBustStringA: string;
 				let cacheBustStringB: string;
-				return xhrRequest('/__echo/xhr', {
+				return fetchRequest('/__echo/fetch', {
 					cacheBust: true
 				}).then(function (response: any) {
 					cacheBustStringA = response.url.split('?')[ 1 ];
 					assert.ok(cacheBustStringA);
 					assert.isFalse(isNaN(Number(cacheBustStringA)));
 
-					return xhrRequest('/__echo/xhr', {
+					return fetchRequest('/__echo/fetch', {
 						cacheBust: true
 					});
 				}).then(function (response: any) {
@@ -335,15 +379,18 @@ registerSuite({
 
 		'headers': {
 			'normalize header names'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
-				return xhrRequest('/__echo/normalize', {
+				return fetchRequest('/__echo/normalize', {
 					headers: {
 						'CONTENT-TYPE': 'arbitrary-value',
 						'X-REQUESTED-WITH': 'test'
 					}
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						assert.isUndefined(data.headers[ 'CONTENT-TYPE' ]);
 						assert.propertyVal(data.headers, 'content-type', 'arbitrary-value');
@@ -355,41 +402,29 @@ registerSuite({
 			},
 
 			'custom headers'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
-				return xhrRequest('/__echo/custom', {
+				return fetchRequest('/__echo/custom', {
 					headers: {
 						'Content-Type': 'application/arbitrary-value'
 					}
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						assert.propertyVal(data.headers, 'content-type', 'application/arbitrary-value');
 
-						return xhrRequest('/__echo/custom', {
+						return fetchRequest('/__echo/custom', {
 							headers: {
 								'Range': 'bytes=0-1024'
 							}
 						});
 					});
-				}).then((response: Response) => {
+				}).then((response: any) => {
 					return response.json().then((data: any) => {
 						assert.isDefined(data.headers, 'range');
-					});
-				});
-			},
-
-			'default headers'(this: any) {
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-				const options = has('formdata') ? { body: new FormData() } : {};
-				return xhrRequest('/__echo/default', options).then(function (response: Response) {
-					return response.json().then((data: any) => {
-						assert.strictEqual(data.headers[ 'x-requested-with' ], 'XMLHttpRequest');
-						if (has('formdata')) {
-							assert.include(data.headers[ 'content-type' ], 'application/x-www-form-urlencoded');
-						}
 					});
 				});
 			}
@@ -397,42 +432,49 @@ registerSuite({
 
 		'responseType': {
 			'xml'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
-				return xhrRequest('/__echo/xhr?responseType=xml').then((response: XhrResponse) => {
-					return response.xml().then((xml: any) => {
-						const foo: string = xml.getElementsByTagName('foo')[ 0 ].getAttribute('value');
+
+				return fetchRequest('/__echo/fetch?responseType=xml').then((response: any) => {
+					return response.xml().then((data: any) => {
+						const foo: string = data.getElementsByTagName('foo')[ 0 ].getAttribute('value');
 						assert.strictEqual(foo, 'bar');
 					});
 				});
 			},
 
 			'blob'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
-				if (!has('xhr2-blob')) {
-					this.skip('Blob doesn\'t exist in this environment');
-				}
 
-				return xhrRequest('/__echo/xhr?responseType=gif').then((response: Response) => {
-					return response.blob().then((blob: any) => {
-						assert.instanceOf(blob, Blob);
+				return fetchRequest('/__echo/fetch?responseType=gif').then((response: any) => {
+					return response.blob().then((data: any) => {
+						assert.instanceOf(data, Blob);
 					});
 				});
 			},
 
 			'arrayBuffer'(this: any) {
+				if (!has('fetch')) {
+					this.skip('Native fetch is not available');
+				}
 				if (!echoServerAvailable) {
 					this.skip('No echo server available');
 				}
 				if (!has('arraybuffer')) {
 					this.skip('ArrayBuffer doesn\'t exist in this environment');
 				}
-				return xhrRequest('/__echo/xhr?responseType=gif').then((response: Response) => {
-					return response.arrayBuffer().then((buffer: any) => {
-						assert.instanceOf(buffer, ArrayBuffer);
+				return fetchRequest('/__echo/fetch?responseType=gif').then((response: any) => {
+					return response.arrayBuffer().then((data: any) => {
+						assert.instanceOf(data, ArrayBuffer);
 					});
 				});
 			}
@@ -441,62 +483,57 @@ registerSuite({
 
 	'response object': {
 		properties(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/foo.json').then(function (response: XhrResponse) {
+			return fetchRequest('/__echo/foo.json').then(function (response: any) {
 				assert.strictEqual(response.status, 200);
 				assert.strictEqual(response.statusText, 'OK');
-				assert.isTrue(response.nativeResponse instanceof XMLHttpRequest);
 				assert.strictEqual(response.url, '/__echo/foo.json');
 				assert.deepEqual(response.requestOptions, { method: 'GET' });
 			});
 		},
 
 		'.header'(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/foo.json').then(function (response: Response) {
+			return fetchRequest('/__echo/foo.json').then(function (response: any) {
+				const length: number = Number(response.headers.get('content-length'));
+
 				return response.text().then((data: any) => {
-					const length: number = Number(response.headers.get('content-length'));
 					assert.strictEqual(length, data.length);
 				});
 			});
 		},
 
-		'body cannot be used twice'() {
+		'body cannot be used more than once'(this: any) {
+			if (!has('fetch')) {
+				this.skip('Native fetch is not available');
+			}
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
 
-			return xhrRequest('/__echo/foo.json').then((response: Response) => {
+			return fetchRequest('/__echo/foo.json').then(function (response: any) {
 				assert.isFalse(response.bodyUsed);
 
-				return response.text().then(() => {
+				return response.json().then(() => {
 					assert.isTrue(response.bodyUsed);
 
-					return response.text().then(() => {
-						throw new Error('should not have succeeded');
+					return response.json().then(() => {
+						throw new Error('should not succeed');
 					}, () => {
-						return 'success';
+						return true;
 					});
 				});
 			});
-		},
-
-		'response types': {
-			'arrayBuffer'() {
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-
-				return xhrRequest('/__echo/foo.json').then((response: Response) => {
-					return response.arrayBuffer().then(arrayBuffer => {
-						assert.isTrue(arrayBuffer instanceof ArrayBuffer);
-					});
-				});
-			}
 		}
 	}
 });

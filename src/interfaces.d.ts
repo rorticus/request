@@ -1,6 +1,7 @@
 import { IterableIterator } from 'dojo-shim/iterator';
 import Task from 'dojo-core/async/Task';
 import UrlSearchParams from 'dojo-core/UrlSearchParams';
+import { ParamList } from 'dojo-core/UrlSearchParams';
 
 export interface Body {
 	readonly bodyUsed: boolean;
@@ -30,6 +31,7 @@ export type Provider = (url: string, options?: RequestOptions) => Task<Response>
 export type ProviderTest = (url: string, options?: RequestOptions) => boolean | null;
 
 export interface RequestOptions {
+	auth?: string;
 	cacheBust?: boolean;
 	credentials?: 'omit' | 'same-origin' | 'include';
 	body?: Blob | BufferSource | FormData | UrlSearchParams | string;
@@ -38,6 +40,7 @@ export interface RequestOptions {
 	password?: string;
 	timeout?: number;
 	user?: string;
+	query?: string | ParamList;
 }
 
 export interface Response extends Body {

@@ -8,6 +8,8 @@ import Headers from '../Headers';
 import TimeoutError from '../TimeoutError';
 import has from '../has';
 import { forOf } from 'dojo-shim/iterator';
+import { generateRequestUrl } from '../util';
+import global from 'dojo-core/global';
 
 export interface XhrRequestOptions extends RequestOptions {
 	blockMainThread?: boolean;
@@ -32,18 +34,20 @@ function getDataTask(response: XhrResponse): Task<XMLHttpRequest> {
 	return data.task;
 }
 
-class XhrResponse extends Response {
+export class XhrResponse extends Response {
 	readonly headers: Headers;
 	readonly ok: boolean;
 	readonly status: number;
 	readonly statusText: string;
 	readonly url: string;
+	readonly requestOptions: XhrRequestOptions;
+	readonly nativeResponse: XMLHttpRequest;
 
 	get bodyUsed(): boolean {
 		return dataMap.get(this).used;
 	}
 
-	constructor(request: XMLHttpRequest) {
+	constructor(url: string, options: XhrRequestOptions, request: XMLHttpRequest) {
 		super();
 
 		const headers = this.headers = new Headers();
@@ -58,10 +62,12 @@ class XhrResponse extends Response {
 			}
 		}
 
+		this.requestOptions = options;
 		this.status = request.status;
 		this.ok = this.status >= 200 && this.status < 300;
 		this.statusText = request.statusText || 'OK';
-		this.url = ('responseURL' in request ? (<any> request).responseURL : headers.get('X-Request-URL')) || '';
+		this.url = url;
+		this.nativeResponse = request;
 	}
 
 	arrayBuffer(): Task<ArrayBuffer> {
@@ -83,7 +89,10 @@ class XhrResponse extends Response {
 	}
 
 	xml(): Task<any> {
-		return <any> getDataTask(this).then(request => request.responseXML);
+		return this.text().then((text: string) => {
+			const parser = new DOMParser();
+			return parser.parseFromString(text, this.headers.get('content-type') || 'text/html');
+		});
 	}
 }
 
@@ -134,11 +143,18 @@ function setOnError(request: XMLHttpRequest, reject: Function) {
 
 export default function xhr(url: string, options: XhrRequestOptions = {}): Task<Response> {
 	const request = new XMLHttpRequest();
+	const requestUrl = generateRequestUrl(url, options);
 
 	options = Object.create(options);
 
 	if (!options.method) {
 		options.method = 'GET';
+	}
+
+	if ((!options.user || !options.password) && options.auth) {
+		let auth = options.auth.split(':');
+		options.user = decodeURIComponent(auth[ 0 ]);
+		options.password = decodeURIComponent(auth[ 1 ]);
 	}
 
 	let isAborted = false;
@@ -163,7 +179,7 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 			}
 
 			if (request.readyState === 2) {
-				const response = new XhrResponse(request);
+				const response = new XhrResponse(requestUrl, options, request);
 
 				const task = new Task<XMLHttpRequest>((resolve, reject) => {
 					timeoutReject = reject;
@@ -196,7 +212,11 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 
 	}, abort);
 
-	request.open(options.method, url, !options.blockMainThread, options.user, options.password);
+	request.open(options.method, requestUrl, !options.blockMainThread, options.user, options.password);
+
+	if (has('filereader') && has('blob')) {
+		request.responseType = 'blob';
+	}
 
 	if (options.timeout > 0 && options.timeout !== Infinity) {
 		timeoutHandle = createTimer(() => {
@@ -208,15 +228,31 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 		}, options.timeout);
 	}
 
-	if (has('filereader') && has('blob')) {
-		request.responseType = 'blob';
-	}
+	let hasContentTypeHeader = false;
+	let hasRequestedWithHeader = false;
 
 	if (options.headers) {
 		const requestHeaders = new Headers(options.headers);
 		forOf(requestHeaders, ([key, value]) => {
+			if (key.toLowerCase() === 'content-type') {
+				hasContentTypeHeader = true;
+			}
+			else if (key.toLowerCase() === 'x-requested-with') {
+				hasRequestedWithHeader = true;
+			}
+
 			request.setRequestHeader(key, value);
 		});
+	}
+
+	if (!hasRequestedWithHeader) {
+		request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+	}
+
+	if (!hasContentTypeHeader && has('formdata') && options.body instanceof global.FormData) {
+		// Assume that most forms do not contain large binary files. If that is not the case,
+		// then "multipart/form-data" should be manually specified as the "Content-Type" header.
+		request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 	}
 
 	task.finally(() => {

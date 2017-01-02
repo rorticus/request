@@ -1,4 +1,4 @@
-import { Response as ResponseInterface } from './interfaces';
+import { Response as ResponseInterface, RequestOptions } from './interfaces';
 import Headers from './Headers';
 import Task from 'dojo-core/async/Task';
 import Promise from 'dojo-shim/Promise';
@@ -15,6 +15,7 @@ abstract class Response implements ResponseInterface {
 	abstract readonly statusText: string;
 	abstract readonly url: string;
 	abstract readonly bodyUsed: boolean;
+	readonly requestOptions: RequestOptions;
 
 	json<T>(): Task<T> {
 		return <any> this.text().then(JSON.parse);

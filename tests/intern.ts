@@ -44,6 +44,7 @@ export const suites = [
 ];
 
 if (typeof process !== 'undefined') {
+	suites.push('tests/unit/providers/node');
 }
 else {
 	suites.push('tests/unit/browser');
