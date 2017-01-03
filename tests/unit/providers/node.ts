@@ -140,32 +140,34 @@ function buildRedirectTests(methods: RedirectTestData[]) {
 				redirectOptions: {
 					keepOriginalMethod
 				}
-			}).then((response: Response) => {
-				return response.text().then((text) => {
-					if (details.callback) {
-						details.callback(response);
-					}
-
-					assert.deepPropertyVal(response, 'requestOptions.method', expectedMethod);
-					assert.equal(response.url, expectedPage);
-
-					if (details.expectedCount !== undefined) {
-						const { redirectOptions: { count: redirectCount = 0 } = {} } = (<NodeResponse> response).requestOptions;
-
-						assert.equal(redirectCount, details.expectedCount);
-					}
-
-					if (details.expectedData !== undefined) {
-						if (text === null) {
-							assert.isNull(details.expectedData);
+			}).then((response?: Response) => {
+				if (response) {
+					return response.text().then((text: string) => {
+						if (details.callback) {
+							details.callback(response);
 						}
-						else {
-							let data = JSON.parse(text);
-							assert.deepEqual(data, details.expectedData);
+
+						assert.deepPropertyVal(response, 'requestOptions.method', expectedMethod);
+						assert.equal(response.url, expectedPage);
+
+						if (details.expectedCount !== undefined) {
+							const { redirectOptions: { count: redirectCount = 0 } = {} } = (<NodeResponse> response).requestOptions;
+
+							assert.equal(redirectCount, details.expectedCount);
 						}
-					}
-				});
-			}).catch((e) => {
+
+						if (details.expectedData !== undefined) {
+							if (text === null) {
+								assert.isNull(details.expectedData);
+							}
+							else {
+								let data = JSON.parse(text);
+								assert.deepEqual(data, details.expectedData);
+							}
+						}
+					});
+				}
+			}).catch((e: Error) => {
 				error = e;
 			}).finally(() => {
 				if (details.expectedToError) {
@@ -362,7 +364,7 @@ registerSuite({
 			}).then(
 				dfd.callback(function (response: NodeResponse) {
 					// TODO: Is it even possible to test this?
-					const socketOptions = response.requestOptions.socketOptions;
+					const socketOptions = response.requestOptions.socketOptions || {};
 					assert.strictEqual(socketOptions.keepAlive, 100);
 					assert.strictEqual(socketOptions.noDelay, true);
 					assert.strictEqual(socketOptions.timeout, 100);
@@ -470,18 +472,20 @@ registerSuite({
 		},
 
 		'data cannot be used twice'() {
-			return nodeRequest(getRequestUrl('foo.json')).then((response: Response) => {
-				assert.isFalse(response.bodyUsed);
-
-				return response.json().then(() => {
-					assert.isTrue(response.bodyUsed);
+			return nodeRequest(getRequestUrl('foo.json')).then((response?: Response) => {
+				if (response) {
+					assert.isFalse(response.bodyUsed);
 
 					return response.json().then(() => {
-						throw new Error('should not have succeeded');
-					}, () => {
-						return true;
+						assert.isTrue(response.bodyUsed);
+
+						return response.json().then(() => {
+							throw new Error('should not have succeeded');
+						}, () => {
+							return true;
+						});
 					});
-				});
+				}
 			});
 		}
 	},

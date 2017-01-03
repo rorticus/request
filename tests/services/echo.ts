@@ -139,7 +139,7 @@ export function start(port?: number): any {
 				else {
 					resolve();
 				}
-			}).then(function (data?: string) {
+			}).then(function (data: string) {
 					if (!responseType || responseType.localeCompare('json') === 0) {
 						const body = JSON.stringify({
 							method: request.method,

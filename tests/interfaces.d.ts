@@ -22,3 +22,5 @@ declare module 'intern/dojo/node!formidable' {
 	import * as formidable from 'formidable';
 	export = formidable;
 }
+
+declare const Promise: any;

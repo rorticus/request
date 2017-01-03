@@ -10,6 +10,7 @@ import has from '../has';
 import { forOf } from 'dojo-shim/iterator';
 import { generateRequestUrl } from '../util';
 import global from 'dojo-core/global';
+import { queueTask } from 'dojo-core/queue';
 
 export interface XhrRequestOptions extends RequestOptions {
 	blockMainThread?: boolean;
@@ -83,7 +84,7 @@ export class XhrResponse extends Response {
 	}
 
 	text(): Task<string> {
-		return <any> getDataTask(this).then(request => {
+		return <any> getDataTask(this).then((request: XMLHttpRequest) => {
 			return String(request.responseText);
 		});
 	}
@@ -98,7 +99,7 @@ export class XhrResponse extends Response {
 
 if (has('blob')) {
 	XhrResponse.prototype.blob = function (this: XhrResponse): Task<Blob> {
-		return <any> getDataTask(this).then(request => request.response);
+		return <any> getDataTask(this).then((request: XMLHttpRequest) => request.response);
 	};
 
 	XhrResponse.prototype.text = function (this: XhrResponse): Task<string> {
@@ -115,13 +116,13 @@ if (has('blob')) {
 
 if (has('formdata')) {
 	XhrResponse.prototype.formData = function (this: XhrResponse): Task<FormData> {
-		return <any> this.text().then(text => {
+		return <any> this.text().then((text: string) => {
 			const data = new FormData();
 
 			text.trim().split('&').forEach(keyValues => {
 				if (keyValues) {
 					const pairs = keyValues.split('=');
-					const name = pairs.shift().replace(/\+/, ' ');
+					const name = (pairs.shift() || '').replace(/\+/, ' ');
 					const value = pairs.join('=').replace(/\+/, ' ');
 
 					data.append(decodeURIComponent(name), decodeURIComponent(value));
@@ -182,7 +183,17 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 				const response = new XhrResponse(requestUrl, options, request);
 
 				const task = new Task<XMLHttpRequest>((resolve, reject) => {
-					timeoutReject = reject;
+					request.onprogress = function (event: any) {
+						if (isAborted) {
+							return;
+						}
+
+						response.emit({
+							type: 'progress',
+							response,
+							totalBytesDownloaded: event.loaded
+						});
+					};
 
 					request.onreadystatechange = function () {
 						if (isAborted) {
@@ -192,11 +203,31 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 							request.onreadystatechange = noop;
 							timeoutHandle && timeoutHandle.destroy();
 
+							response.emit({
+								type: 'data',
+								response,
+								chunk: request.response
+							});
+
+							response.emit({
+								type: 'end',
+								response
+							});
+
 							resolve(request);
 						}
 					};
 
 					setOnError(request, reject);
+
+					queueTask(() => {
+						timeoutReject = reject;
+
+						response.emit({
+							type: 'start',
+							response
+						});
+					});
 				}, abort);
 
 				dataMap.set(response, {

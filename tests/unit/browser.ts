@@ -7,6 +7,7 @@ import xhr from '../../src/providers/xhr';
 
 import './providers/xhr';
 import './providers/fetch';
+import Response from '../../src/Response';
 
 interface EchoData {
 	method: string;
@@ -39,7 +40,7 @@ registerSuite({
 		const dfd = this.async();
 
 		request.get('/__echo/xhr?color=blue')
-			.then(response => response.json<EchoData>())
+			.then((response: Response) => response.json<EchoData>())
 			.then(<any> dfd.callback((data: EchoData) => {
 				assert.deepEqual(data.query, { color: 'blue' });
 				assert.equal(data.method.toLowerCase(), 'get');

@@ -52,7 +52,7 @@ export default class Headers implements HeadersInterface {
 		return new ShimIterator(entries);
 	}
 
-	get(name: string): string {
+	get(name: string): string | null {
 		const values = this.map.get(name.toLowerCase());
 
 		if (values) {

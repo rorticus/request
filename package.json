@@ -1,36 +1,49 @@
 {
   "name": "dojo-request",
-  "version": "2.0.0-alpha.1",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "2.0.0-pre",
+  "description": "Tools for making HTTP requests",
+  "engines": {
+    "node": "^6.0.0",
+    "npm": "^3.0.0"
   },
-  "author": "",
+  "homepage": "http://dojotoolkit.org",
+  "bugs": {
+    "url": "https://github.com/dojo/request/issues"
+  },
   "license": "BSD-3-Clause",
-  "dependencies": {
-    "dojo-core": "2.0.0-alpha.18",
-    "dojo-has": "2.0.0-alpha.6",
-    "dojo-shim": "2.0.0-beta.7",
-    "dojo-streams": "2.0.0-alpha.1"
+  "private": true,
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dojo/request.git"
   },
-  "optionalDependencies": {
-    "dojo-interfaces": "2.0.0-alpha.9"
+  "scripts": {
+    "prepublish": "grunt peerDepInstall",
+    "test": "grunt test"
+  },
+  "peerDependencies": {
+    "dojo-has": ">=2.0.0-alpha.6",
+    "dojo-shim": ">=2.0.0-alpha.4",
+    "dojo-core": ">=2.0.0-alpha.18"
   },
   "devDependencies": {
-    "@types/formidable": "1.0.29",
-    "@types/glob": "5.0.30",
-    "dojo-loader": "2.0.0-beta.7",
-    "dojo-typings": "1.11.5",
+    "@types/benchmark": "~1.0.0",
+    "@types/chai": "~3.4.0",
+    "@types/formidable": "~1.0.0",
+    "@types/glob": "~5.0.0",
+    "@types/grunt": "~0.4.0",
+    "@types/sinon": "~1.16.0",
+    "benchmark": "^1.0.0",
+    "dojo-interfaces": ">=2.0.0-alpha.2",
+    "dojo-loader": ">=2.0.0-beta.7",
     "formidable": "1.0.17",
-    "grunt": "1.0.1",
-    "grunt-dojo2": "2.0.0-beta.23",
-    "grunt-ts": "6.0.0-beta.3",
-    "grunt-tslint": "4.0.0",
+    "grunt": "^1.0.1",
+    "grunt-dojo2": ">=2.0.0-beta.19",
     "http-proxy": "0.10.3",
-    "intern": "3.4.2",
+    "intern": "3.3.2",
     "istanbul": "0.4.3",
-    "tslint": "4.1.1",
-    "typescript": "2.1.4"
+    "sinon": "~1.17.6",
+    "tslint": "^3.15.1",
+    "typescript": "~2.1.4"
   }
 }

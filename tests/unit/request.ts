@@ -6,7 +6,7 @@ import request, { Response, providerRegistry, Headers } from '../../src/index';
 import Task from 'dojo-core/async/Task';
 
 class MockResponse extends Response {
-	headers: Headers = null;
+	headers: Headers;
 	ok = true;
 	status = 200;
 	statusText = 'OK';
@@ -35,7 +35,7 @@ function mockProviderTwo(url: string): Task<Response> {
 	return Task.resolve(new MockResponse(2));
 }
 
-let handle: Handle;
+let handle: Handle | null;
 
 registerSuite({
 	name: 'request',
@@ -62,7 +62,7 @@ registerSuite({
 
 		none: {
 			beforeEach() {
-				request.setDefaultProvider(null);
+				request.setDefaultProvider(<any> null);
 			},
 
 			rejects() {

@@ -7,6 +7,7 @@ import { RequestOptions } from '../interfaces';
 import Response from '../Response';
 import Headers from '../Headers';
 import TimeoutError from '../TimeoutError';
+import { queueTask } from 'dojo-core/queue';
 
 import * as http from 'http';
 import * as https from 'https';
@@ -36,7 +37,6 @@ export interface NodeRequestOptions extends RequestOptions {
 		noDelay?: boolean;
 		timeout?: number;
 	};
-	streamData?: boolean;
 	streamEncoding?: string;
 	redirectOptions?: {
 		limit?: number;
@@ -100,7 +100,7 @@ function getDataTask(response: NodeResponse): Task<RequestData> {
 
 	data.used = true;
 
-	return <any> data.task.then(_ => data);
+	return <Task<RequestData>> data.task.then(_ => data);
 }
 
 export class NodeResponse extends Response {
@@ -139,9 +139,9 @@ export class NodeResponse extends Response {
 
 		this.requestOptions = options;
 		this.nativeResponse = response;
-		this.status = response.statusCode;
+		this.status = response.statusCode || 0;
 		this.ok = this.status >= 200 && this.status < 300;
-		this.statusText = response.statusMessage;
+		this.statusText = response.statusMessage || '';
 		this.url = url;
 	}
 
@@ -159,12 +159,12 @@ export class NodeResponse extends Response {
 
 	text(): Task<string> {
 		return <any> getDataTask(this).then(data => {
-			return String(data.data);
+			return String(data ? data.data : '');
 		});
 	}
 }
 
-function redirect(resolve: (p?: any) => void, reject: (_?: Error) => void, url: string, options: NodeRequestOptions): boolean {
+function redirect(resolve: (p?: any) => void, reject: (_?: Error) => void, url: string | null, options: NodeRequestOptions): boolean {
 	if (!options.redirectOptions) {
 		options.redirectOptions = {};
 	}
@@ -196,8 +196,6 @@ function redirect(resolve: (p?: any) => void, reject: (_?: Error) => void, url: 
 
 export default function node(url: string, options: NodeRequestOptions = {}): Task<Response> {
 	const parsedUrl = urlUtil.parse(options.proxy || url);
-
-	// TODO: Stream handling
 
 	const requestOptions: HttpsOptions = {
 		agent: options.agent,
@@ -333,7 +331,7 @@ export default function node(url: string, options: NodeRequestOptions = {}): Tas
 							reject(new Error('expected Location header to contain a proxy url'));
 						}
 						else {
-							newOptions.proxy = response.headers.get('location');
+							newOptions.proxy = response.headers.get('location') || '';
 							if (redirect(resolve, reject, url, newOptions)) {
 								return;
 							}
@@ -363,22 +361,48 @@ export default function node(url: string, options: NodeRequestOptions = {}): Tas
 			const task = new Task<http.IncomingMessage>((resolve, reject) => {
 				timeoutReject = reject;
 
-				message.on('data', (chunk: any) => {
-					data.buffer.push(chunk);
-					data.size += typeof chunk === 'string' ?
-						Buffer.byteLength(chunk, options.streamEncoding) :
-						chunk.length
-					;
+				// we queue this up for later to allow listeners to register themselves before we start receiving data
+				queueTask(() => {
+					response.emit({
+						type: 'start',
+						response
+					});
+
+					message.on('data', (chunk: any) => {
+						response.emit({
+							type: 'data',
+							response,
+							chunk: chunk
+						});
+
+						if (response.downloadBody) {
+							data.buffer.push(chunk);
+						}
+
+						data.size += typeof chunk === 'string' ?
+							Buffer.byteLength(chunk, options.streamEncoding) :
+							chunk.length;
+
+						response.emit({
+							type: 'progress',
+							response,
+							totalBytesDownloaded: data.size
+						});
+					});
+
+					message.once('end', () => {
+						timeoutHandle && timeoutHandle.destroy();
+
+						data.data = (options.streamEncoding ? data.buffer.join('') : String(Buffer.concat(data.buffer, data.size)));
+
+						response.emit({
+							type: 'end',
+							response
+						});
+
+						resolve(message);
+					});
 				});
-
-				message.once('end', () => {
-					timeoutHandle && timeoutHandle.destroy();
-
-					data.data = (options.streamEncoding ? data.buffer.join('') : String(Buffer.concat(data.buffer, data.size)));
-
-					resolve(message);
-				});
-
 			}, () => {
 				request.abort();
 			});

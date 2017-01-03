@@ -4,10 +4,11 @@ import * as assert from 'intern/chai!assert';
 import * as dojo1xhr from 'dojo/request/xhr';
 
 import xhrRequest from '../../../src/providers/xhr';
-import { Response } from '../../../src/interfaces';
+import { Response, StartEvent, EndEvent, DataEvent, ProgressEvent } from '../../../src/interfaces';
 import UrlSearchParams from 'dojo-core/UrlSearchParams';
 import has from 'dojo-has/has';
 import { XhrResponse } from '../../../src/providers/xhr';
+import Promise from 'dojo-shim/Promise';
 
 let echoServerAvailable = false;
 registerSuite({
@@ -54,7 +55,7 @@ registerSuite({
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/xhr?color=blue&numbers=one&numbers=two').then(function (response: Response) {
+			return xhrRequest('/__echo/xhr?color=blue&numbers=one&numbers=two').then(function (response: any) {
 				return response.json().then((data: any) => {
 					const query = data.query;
 					assert.deepEqual(query, {
@@ -76,7 +77,7 @@ registerSuite({
 			return xhrRequest('/__echo/post', {
 				method: 'POST',
 				body: new UrlSearchParams({ color: 'blue' }).toString()
-			}).then(function (response: Response) {
+			}).then(function (response: any) {
 				return response.json().then((data: any) => {
 					assert.strictEqual(data.method, 'POST');
 					const payload = data.payload;
@@ -168,7 +169,7 @@ registerSuite({
 						thud: 'thonk',
 						xyzzy: '3'
 					}).toString()
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						const query = data.query;
 						assert.deepEqual(query, {
@@ -194,7 +195,7 @@ registerSuite({
 						thud: 'thonk',
 						xyzzy: '3'
 					}
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						const query = data.query;
 						assert.deepEqual(query, {
@@ -343,7 +344,7 @@ registerSuite({
 						'CONTENT-TYPE': 'arbitrary-value',
 						'X-REQUESTED-WITH': 'test'
 					}
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						assert.isUndefined(data.headers[ 'CONTENT-TYPE' ]);
 						assert.propertyVal(data.headers, 'content-type', 'arbitrary-value');
@@ -362,7 +363,7 @@ registerSuite({
 					headers: {
 						'Content-Type': 'application/arbitrary-value'
 					}
-				}).then(function (response: Response) {
+				}).then(function (response: any) {
 					return response.json().then((data: any) => {
 						assert.propertyVal(data.headers, 'content-type', 'application/arbitrary-value');
 
@@ -372,7 +373,7 @@ registerSuite({
 							}
 						});
 					});
-				}).then((response: Response) => {
+				}).then((response: any) => {
 					return response.json().then((data: any) => {
 						assert.isDefined(data.headers, 'range');
 					});
@@ -384,7 +385,7 @@ registerSuite({
 					this.skip('No echo server available');
 				}
 				const options = has('formdata') ? { body: new FormData() } : {};
-				return xhrRequest('/__echo/default', options).then(function (response: Response) {
+				return xhrRequest('/__echo/default', options).then(function (response: any) {
 					return response.json().then((data: any) => {
 						assert.strictEqual(data.headers[ 'x-requested-with' ], 'XMLHttpRequest');
 						if (has('formdata')) {
@@ -416,7 +417,7 @@ registerSuite({
 					this.skip('Blob doesn\'t exist in this environment');
 				}
 
-				return xhrRequest('/__echo/xhr?responseType=gif').then((response: Response) => {
+				return xhrRequest('/__echo/xhr?responseType=gif').then((response: any) => {
 					return response.blob().then((blob: any) => {
 						assert.instanceOf(blob, Blob);
 					});
@@ -430,7 +431,7 @@ registerSuite({
 				if (!has('arraybuffer')) {
 					this.skip('ArrayBuffer doesn\'t exist in this environment');
 				}
-				return xhrRequest('/__echo/xhr?responseType=gif').then((response: Response) => {
+				return xhrRequest('/__echo/xhr?responseType=gif').then((response: any) => {
 					return response.arrayBuffer().then((buffer: any) => {
 						assert.instanceOf(buffer, ArrayBuffer);
 					});
@@ -457,7 +458,7 @@ registerSuite({
 			if (!echoServerAvailable) {
 				this.skip('No echo server available');
 			}
-			return xhrRequest('/__echo/foo.json').then(function (response: Response) {
+			return xhrRequest('/__echo/foo.json').then(function (response: any) {
 				return response.text().then((data: any) => {
 					const length: number = Number(response.headers.get('content-length'));
 					assert.strictEqual(length, data.length);
@@ -470,7 +471,7 @@ registerSuite({
 				this.skip('No echo server available');
 			}
 
-			return xhrRequest('/__echo/foo.json').then((response: Response) => {
+			return xhrRequest('/__echo/foo.json').then((response: any) => {
 				assert.isFalse(response.bodyUsed);
 
 				return response.text().then(() => {
@@ -491,9 +492,84 @@ registerSuite({
 					this.skip('No echo server available');
 				}
 
-				return xhrRequest('/__echo/foo.json').then((response: Response) => {
-					return response.arrayBuffer().then(arrayBuffer => {
+				return xhrRequest('/__echo/foo.json').then((response: any) => {
+					return response.arrayBuffer().then((arrayBuffer: any) => {
 						assert.isTrue(arrayBuffer instanceof ArrayBuffer);
+					});
+				});
+			}
+		},
+
+		'response progress': {
+			'start event'() {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				let startCalled = false;
+
+				return xhrRequest('/__echo/foo.json').then((response: any) => {
+					response.on('start', (event: StartEvent) => {
+						startCalled = true;
+					});
+
+					return response.text().then(() => {
+						assert.isTrue(startCalled);
+					});
+				});
+			},
+
+			'end event'() {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				let endCalled = false;
+
+				return xhrRequest('/__echo/foo.json').then((response: any) => {
+					response.on('end', (event: EndEvent) => {
+						endCalled = true;
+					});
+
+					return response.text().then(() => {
+						assert.isTrue(endCalled);
+					});
+				});
+			},
+
+			'data event'() {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				let timesCalled = 0;
+
+				return xhrRequest('/__echo/foo.json').then((response: any) => {
+					response.on('data', (event: DataEvent) => {
+						assert.isNotNull(event.chunk);
+						timesCalled++;
+					});
+
+					return response.text().then(() => {
+						assert.equal(timesCalled, 1);
+					});
+				});
+			},
+
+			'progress event'() {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				let progressEvents: number[] = [];
+
+				return xhrRequest('/__echo/foo.json').then((response: any) => {
+					response.on('progress', (event: ProgressEvent) => {
+						progressEvents.push(event.totalBytesDownloaded);
+					});
+
+					return response.text().then(() => {
+						assert.isTrue(progressEvents.length > 0);
 					});
 				});
 			}

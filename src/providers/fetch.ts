@@ -89,30 +89,30 @@ export default function fetchRequest(url: string, options?: FetchRequestOptions)
 	const fetchRequestHeaders: Headers = new Headers();
 	const requestUrl = generateRequestUrl(url, options);
 
-	options = options || {};
+	const requestOptions = options || {};
 
-	if ((!options.user || !options.password) && options.auth) {
-		const auth = options.auth.split(':');
-		options.user = decodeURIComponent(auth[ 0 ]);
-		options.password = decodeURIComponent(auth[ 1 ]);
+	if ((!requestOptions.user || !requestOptions.password) && requestOptions.auth) {
+		const auth = requestOptions.auth.split(':');
+		requestOptions.user = decodeURIComponent(auth[ 0 ]);
+		requestOptions.password = decodeURIComponent(auth[ 1 ]);
 	}
 
-	if (options.user || options.password) {
-		fetchRequestHeaders.append('authorization', `Basic ${btoa(`${options.user}:${options.password}`)}`);
+	if (requestOptions.user || requestOptions.password) {
+		fetchRequestHeaders.append('authorization', `Basic ${btoa(`${requestOptions.user}:${requestOptions.password}`)}`);
 	}
 
-	if (options.cacheBust) {
+	if (requestOptions.cacheBust) {
 		fetchRequestOptions.cache = 'reload';
 	}
 
-	if (!options.method) {
-		options.method = 'GET';
+	if (!requestOptions.method) {
+		requestOptions.method = 'GET';
 	}
 
-	fetchRequestOptions.method = options.method;
+	fetchRequestOptions.method = requestOptions.method;
 
-	if (options.headers) {
-		const headers = new FetchHeaders(options.headers);
+	if (requestOptions.headers) {
+		const headers = new FetchHeaders(requestOptions.headers);
 
 		let hasContentTypeHeader = false;
 		let hasRequestedWithHeader = false;
@@ -128,8 +128,8 @@ export default function fetchRequest(url: string, options?: FetchRequestOptions)
 		});
 	}
 
-	if (options.body) {
-		fetchRequestOptions.body = options.body;
+	if (requestOptions.body) {
+		fetchRequestOptions.body = requestOptions.body;
 	}
 
 	fetchRequestOptions.headers = fetchRequestHeaders;
@@ -142,15 +142,15 @@ export default function fetchRequest(url: string, options?: FetchRequestOptions)
 		fetch(request).then((fetchResponse: any) => {
 			timeout && timeout.destroy();
 
-			resolve(new FetchResponse(requestUrl, options, fetchResponse));
+			resolve(new FetchResponse(requestUrl, requestOptions, fetchResponse));
 		}, reject);
 
-		if (options.timeout > 0 && options.timeout !== Infinity) {
+		if (requestOptions.timeout > 0 && requestOptions.timeout !== Infinity) {
 			timeout = ((): Handle => {
 				const timer = setTimeout(function (): void {
-					const error = new TimeoutError(`Request timed out after ${options.timeout}ms`);
+					const error = new TimeoutError(`Request timed out after ${requestOptions.timeout}ms`);
 					reject(error);
-				}, options.timeout);
+				}, requestOptions.timeout);
 
 				return createHandle((): void => {
 					clearTimeout(timer);

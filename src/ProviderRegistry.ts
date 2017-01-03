@@ -8,7 +8,7 @@ export default class ProviderRegistry extends MatchRegistry<Provider> {
 	}
 
 	register(test: string | RegExp | ProviderTest | null, value: Provider, first?: boolean): Handle {
-		let entryTest: Test;
+		let entryTest: Test | null;
 
 		if (typeof test === 'string') {
 			entryTest = (url, options) => test === url;

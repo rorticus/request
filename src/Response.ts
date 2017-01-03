@@ -1,7 +1,16 @@
-import { Response as ResponseInterface, RequestOptions } from './interfaces';
+import {
+	Response as ResponseInterface,
+	RequestOptions,
+	DataEvent,
+	EndEvent,
+	StartEvent,
+	ProgressEvent
+} from './interfaces';
 import Headers from './Headers';
+import Evented from 'dojo-core/Evented';
 import Task from 'dojo-core/async/Task';
 import Promise from 'dojo-shim/Promise';
+import { EventObject, Handle } from 'dojo-interfaces/core';
 
 export interface ResponseData {
 	task: Task<any>;
@@ -17,8 +26,24 @@ abstract class Response implements ResponseInterface {
 	abstract readonly bodyUsed: boolean;
 	readonly requestOptions: RequestOptions;
 
+	private _events: Evented = new Evented();
+
+	downloadBody: boolean = true;
+
 	json<T>(): Task<T> {
 		return <any> this.text().then(JSON.parse);
+	}
+
+	on(type: 'progress', fn: (event?: ProgressEvent) => void): Handle;
+	on(type: 'data', fn: (event?: DataEvent) => void): Handle;
+	on(type: 'end', fn: (event?: EndEvent) => void): Handle;
+	on(type: 'start', fn: (event?: StartEvent) => void): Handle;
+	on(type: string, fn: (event?: EventObject) => void): Handle {
+		return this._events.on(type, fn);
+	}
+
+	emit(event: ProgressEvent | DataEvent | EndEvent | StartEvent) {
+		this._events.emit(event);
 	}
 
 	abstract arrayBuffer(): Task<ArrayBuffer>;
