@@ -4,8 +4,6 @@ import has, { add } from 'dojo-core/has';
 export * from 'dojo-core/has';
 export default has;
 
-add('fetch', 'fetch' in global && typeof global.fetch === 'function');
-
 add('arraybuffer', typeof global.ArrayBuffer !== 'undefined', true);
 add('formdata', typeof global.FormData !== 'undefined', true);
 add('filereader', typeof global.FileReader !== 'undefined', true);
