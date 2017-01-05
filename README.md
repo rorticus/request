@@ -23,7 +23,7 @@ With this module you can,
 
 ### Quick Start
 
-To make simple GET requests, you must register your provider (node, fetch, or XHR) then make the request.  The overall
+To make simple GET requests, you must register your provider (node, or XHR) then make the request.  The overall
 format of the API resembles the [Fetch Standard](https://fetch.spec.whatwg.org/).
 
 ```ts
@@ -80,8 +80,7 @@ request.get('http://www.example.com').then(response => {
 });
 ```
 
-Note that there are some caveats when using these events. XHR cannot stream data (a final `data` event is sent at the end however) and
-the fetch implementation cannot report progress or stream data (again, progress/data events are sent upon the conclusion of the response).
+Note that there are some caveats when using these events. XHR cannot stream data (a final `data` event is sent at the end however).
 
 ## How do I contribute?
 
