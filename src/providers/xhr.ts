@@ -198,6 +198,8 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 				const response = new XhrResponse(request);
 
 				const task = new Task<XMLHttpRequest>((resolve, reject) => {
+					timeoutReject = reject;
+
 					request.onprogress = function (event: any) {
 						if (isAborted) {
 							return;
@@ -236,8 +238,6 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 					setOnError(request, reject);
 
 					queueTask(() => {
-						timeoutReject = reject;
-
 						response.emit({
 							type: 'start',
 							response
