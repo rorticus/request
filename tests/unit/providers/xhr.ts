@@ -394,49 +394,6 @@ registerSuite({
 					});
 				});
 			}
-		},
-
-		'responseType': {
-			'xml'(this: any) {
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-				return xhrRequest('/__echo/xhr?responseType=xml').then((response: XhrResponse) => {
-					return response.xml().then((xml: any) => {
-						const foo: string = xml.getElementsByTagName('foo')[ 0 ].getAttribute('value');
-						assert.strictEqual(foo, 'bar');
-					});
-				});
-			},
-
-			'blob'(this: any) {
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-				if (!has('xhr2-blob')) {
-					this.skip('Blob doesn\'t exist in this environment');
-				}
-
-				return xhrRequest('/__echo/xhr?responseType=gif').then((response: any) => {
-					return response.blob().then((blob: any) => {
-						assert.instanceOf(blob, Blob);
-					});
-				});
-			},
-
-			'arrayBuffer'(this: any) {
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-				if (!has('arraybuffer')) {
-					this.skip('ArrayBuffer doesn\'t exist in this environment');
-				}
-				return xhrRequest('/__echo/xhr?responseType=gif').then((response: any) => {
-					return response.arrayBuffer().then((buffer: any) => {
-						assert.instanceOf(buffer, ArrayBuffer);
-					});
-				});
-			}
 		}
 	},
 
@@ -495,6 +452,46 @@ registerSuite({
 				return xhrRequest('/__echo/foo.json').then((response: any) => {
 					return response.arrayBuffer().then((arrayBuffer: any) => {
 						assert.isTrue(arrayBuffer instanceof ArrayBuffer);
+					});
+				});
+			},
+
+			'blob'() {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				return xhrRequest('/__echo/foo.json').then((response: any) => {
+					return response.blob().then((blob: any) => {
+						assert.isTrue(blob instanceof Blob);
+					});
+				});
+			},
+
+			'formData'() {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				if (!has('formdata')) {
+					this.skip('FormData is not available');
+				}
+
+				return xhrRequest('/__echo/foo.json').then((response: any) => {
+					return response.formData().then((formData: any) => {
+						assert.isTrue(formData instanceof FormData);
+					});
+				});
+			},
+
+			'xml'() {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				return xhrRequest('/__echo/xhr?responseType=xml').then((response: any) => {
+					return response.xml().then((xml: any) => {
+						assert.isTrue(xml instanceof Document);
 					});
 				});
 			}

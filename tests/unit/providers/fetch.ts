@@ -428,56 +428,6 @@ registerSuite({
 					});
 				});
 			}
-		},
-
-		'responseType': {
-			'xml'(this: any) {
-				if (!has('fetch')) {
-					this.skip('Native fetch is not available');
-				}
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-
-				return fetchRequest('/__echo/fetch?responseType=xml').then((response: any) => {
-					return response.xml().then((data: any) => {
-						const foo: string = data.getElementsByTagName('foo')[ 0 ].getAttribute('value');
-						assert.strictEqual(foo, 'bar');
-					});
-				});
-			},
-
-			'blob'(this: any) {
-				if (!has('fetch')) {
-					this.skip('Native fetch is not available');
-				}
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-
-				return fetchRequest('/__echo/fetch?responseType=gif').then((response: any) => {
-					return response.blob().then((data: any) => {
-						assert.instanceOf(data, Blob);
-					});
-				});
-			},
-
-			'arrayBuffer'(this: any) {
-				if (!has('fetch')) {
-					this.skip('Native fetch is not available');
-				}
-				if (!echoServerAvailable) {
-					this.skip('No echo server available');
-				}
-				if (!has('arraybuffer')) {
-					this.skip('ArrayBuffer doesn\'t exist in this environment');
-				}
-				return fetchRequest('/__echo/fetch?responseType=gif').then((response: any) => {
-					return response.arrayBuffer().then((data: any) => {
-						assert.instanceOf(data, ArrayBuffer);
-					});
-				});
-			}
 		}
 	},
 
@@ -534,6 +484,67 @@ registerSuite({
 					});
 				});
 			});
+		},
+
+		'response types': {
+			'arrayBuffer'(this: any) {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				return fetchRequest('/__echo/foo.json').then((response: any) => {
+					return response.arrayBuffer().then((arrayBuffer: any) => {
+						assert.isTrue(arrayBuffer instanceof ArrayBuffer);
+					});
+				});
+			},
+
+			'blob'(this: any) {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				return fetchRequest('/__echo/foo.json').then((response: any) => {
+					return response.blob().then((blob: any) => {
+						assert.isTrue(blob instanceof Blob);
+					});
+				});
+			},
+
+			'formData'(this: any) {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				if (!has('formdata')) {
+					this.skip('FormData is not available');
+				}
+
+				/*
+				FormData could be supported by the browser, but not by the fetch implementation.
+				We're going to consider success either the check for support worked (error is thrown), or
+				actual FormData is returned.
+				 */
+				return fetchRequest('/__echo/foo.json').then((response: any) => {
+					return response.formData().then((formData: any) => {
+						assert.isTrue(formData instanceof FormData);
+					}, (e: any) => {
+						assert.include(e.message, 'FormData is not supported');
+					});
+				});
+			},
+
+			'xml'(this: any) {
+				if (!echoServerAvailable) {
+					this.skip('No echo server available');
+				}
+
+				return fetchRequest('/__echo/xhr?responseType=xml').then((response: any) => {
+					return response.xml().then((xml: any) => {
+						assert.isTrue(xml instanceof Document);
+					});
+				});
+			}
 		}
 	}
 });

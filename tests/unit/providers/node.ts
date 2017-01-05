@@ -1,11 +1,12 @@
-import * as registerSuite from 'intern!object';
-import * as assert from 'intern/chai!assert';
-import * as DojoPromise from 'intern/dojo/Promise';
+import has from '../../../src/has';
 import TimeoutError from '../../../src/TimeoutError';
 import { default as nodeRequest, NodeResponse } from '../../../src/providers/node';
 import { createServer } from 'http';
 import { parse } from 'url';
 import { Response } from '../../../src/interfaces';
+import * as registerSuite from 'intern!object';
+import * as assert from 'intern/chai!assert';
+import * as DojoPromise from 'intern/dojo/Promise';
 
 const serverPort = 8124;
 const serverUrl = 'http://localhost:' + serverPort;
@@ -36,6 +37,12 @@ interface RedirectTestData {
 const responseData: { [url: string]: DummyResponse } = {
 	'foo.json': {
 		body: JSON.stringify({ foo: 'bar' })
+	},
+	'cookies': {
+		body: JSON.stringify({ foo: 'bar' }),
+		headers: {
+			'Set-cookie': 'one'
+		}
 	},
 	invalidJson: {
 		body: '<not>JSON</not>'
@@ -260,7 +267,7 @@ registerSuite({
 	},
 
 	'request options': {
-		data: {
+		body: {
 			'string'(this: any): void {
 				const dfd = this.async();
 				nodeRequest(getRequestUrl('foo.json'), {
@@ -272,6 +279,14 @@ registerSuite({
 					}),
 					dfd.reject.bind(dfd)
 				);
+			},
+			'buffer'() {
+				return nodeRequest(getRequestUrl('foo.json'), {
+					body: Buffer.from('{ "foo": "bar" }', 'utf8'),
+					method: 'POST'
+				}).then(() => {
+					assert.deepEqual(requestData, { foo: 'bar' });
+				});
 			}
 		},
 
@@ -456,6 +471,14 @@ registerSuite({
 						dfd.reject.bind(dfd)
 					);
 			}
+		},
+
+		'set cookie makes separate headers'() {
+			return nodeRequest(getRequestUrl('cookies')).then((response: any) => {
+				assert.deepEqual(response.headers.getAll('set-cookie'), [
+					'one'
+				]);
+			});
 		}
 	},
 
@@ -487,6 +510,49 @@ registerSuite({
 					});
 				}
 			});
+		},
+
+		'response types': {
+			'arrayBuffer'() {
+				return nodeRequest(getRequestUrl('foo.json')).then((response: any) => {
+					return response.arrayBuffer().then((arrayBuffer: any) => {
+						assert.isAbove(arrayBuffer.byteLength, 0);
+						assert.isAbove(arrayBuffer.length, 0);
+					});
+				});
+			},
+
+			'blob'() {
+				return nodeRequest(getRequestUrl('foo.json')).then((response: any) => {
+					return response.blob().then((blob: any) => {
+						assert.fail('should not have succeeded');
+					}, () => {
+						return true;
+					});
+				});
+			},
+
+			'formData'(this: any) {
+				if (!has('formdata')) {
+					this.skip('FormData is not available');
+				}
+
+				return nodeRequest(getRequestUrl('foo.json')).then((response: any) => {
+					return response.formData().then((formData: any) => {
+						assert.isTrue(formData instanceof FormData);
+					});
+				});
+			},
+
+			'xml'() {
+				return nodeRequest(getRequestUrl('foo.json')).then((response: any) => {
+					return response.xml().then((blob: any) => {
+						assert.fail('should not have succeeded');
+					}, () => {
+						return true;
+					});
+				});
+			}
 		}
 	},
 

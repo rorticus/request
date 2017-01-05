@@ -90,6 +90,10 @@ export class FetchResponse extends Response {
 	}
 
 	formData(): Task<FormData> {
+		if (!('formData' in this.nativeResponse)) {
+			return Task.reject(new TypeError('FormData is not supported in the native fetch implementation'));
+		}
+
 		return new Task<FormData>((resolve, reject) => {
 			this.nativeResponse.formData().then((formData: FormData) => {
 				this.emit({

@@ -1,11 +1,8 @@
-import has from '../has';
 import Headers from '../Headers';
 import { RequestOptions } from '../interfaces';
-import Response, { getArrayBufferFromBlob } from '../Response';
+import Response from '../Response';
 import TimeoutError from '../TimeoutError';
-import { getStringFromFormData } from '../util';
 import Task from 'dojo-core/async/Task';
-import global from 'dojo-core/global';
 import { queueTask } from 'dojo-core/queue';
 import { createTimer } from 'dojo-core/util';
 import { Handle } from 'dojo-interfaces/core';
@@ -160,11 +157,28 @@ export class NodeResponse extends Response {
 	}
 
 	arrayBuffer(): Task<ArrayBuffer> {
-		return Task.reject<Blob>(new Error('ArrayBuffer not supported'));
+		return <any> getDataTask(this).then(data => {
+			if (data) {
+				if (<any> data.data instanceof Buffer) {
+					return data.data;
+				}
+				else {
+					return Buffer.from(data.data, 'utf8');
+				}
+			}
+
+			return new Buffer([]);
+		});
 	}
 
 	blob(): Task<Blob> {
+		// Node doesn't support Blobs
 		return Task.reject<Blob>(new Error('Blob not supported'));
+	}
+
+	xml(): Task<Document> {
+		// no xml parser in node
+		return Task.reject<Blob>(new Error('XML not supported'));
 	}
 
 	formData(): Task<FormData> {
@@ -437,14 +451,8 @@ export default function node(url: string, options: NodeRequestOptions = {}): Tas
 		request.once('error', reject);
 
 		if (options.body) {
-			if (has('arraybuffer') && options.body instanceof global.ArrayBuffer) {
+			if (options.body instanceof Buffer) {
 				request.end(options.body.toString());
-			}
-			else if (has('blob') && options.body instanceof global.Blob) {
-				request.end(getArrayBufferFromBlob(<Blob> options.body));
-			}
-			else if (has('formdata') && options.body instanceof global.FormData) {
-				request.end(getStringFromFormData(options.body));
 			}
 			else {
 				request.end(options.body.toString());
