@@ -17,7 +17,7 @@ export interface ResponseData {
 	used: boolean;
 }
 
-abstract class Response implements ResponseInterface {
+abstract class Response extends Evented implements ResponseInterface {
 	abstract readonly headers: Headers;
 	abstract readonly ok: boolean;
 	abstract readonly status: number;
@@ -26,24 +26,22 @@ abstract class Response implements ResponseInterface {
 	abstract readonly bodyUsed: boolean;
 	readonly requestOptions: RequestOptions;
 
-	private _events: Evented = new Evented();
-
 	downloadBody: boolean = true;
 
 	emit(event: ProgressEvent | DataEvent | EndEvent | StartEvent) {
-		this._events.emit(event);
+		super.emit(event);
 	}
 
 	json<T>(): Task<T> {
 		return <any> this.text().then(JSON.parse);
 	}
 
-	on(type: 'progress', fn: (event?: ProgressEvent) => void): Handle;
-	on(type: 'data', fn: (event?: DataEvent) => void): Handle;
-	on(type: 'end', fn: (event?: EndEvent) => void): Handle;
-	on(type: 'start', fn: (event?: StartEvent) => void): Handle;
-	on(type: string, fn: (event?: EventObject) => void): Handle {
-		return this._events.on(type, fn);
+	on(type: 'progress', fn: (event: ProgressEvent) => void): Handle;
+	on(type: 'data', fn: (event: DataEvent) => void): Handle;
+	on(type: 'end', fn: (event: EndEvent) => void): Handle;
+	on(type: 'start', fn: (event: StartEvent) => void): Handle;
+	on(type: string, fn: (event: EventObject) => void): Handle {
+		return super.on(type, fn);
 	}
 
 	abstract arrayBuffer(): Task<ArrayBuffer>;
