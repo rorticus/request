@@ -88,13 +88,6 @@ export class XhrResponse extends Response {
 			return String(request.responseText);
 		});
 	}
-
-	xml(): Task<any> {
-		return this.text().then((text: string) => {
-			const parser = new DOMParser();
-			return parser.parseFromString(text, this.headers.get('content-type') || 'text/html');
-		});
-	}
 }
 
 if (has('blob')) {

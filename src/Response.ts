@@ -30,6 +30,10 @@ abstract class Response implements ResponseInterface {
 
 	downloadBody: boolean = true;
 
+	emit(event: ProgressEvent | DataEvent | EndEvent | StartEvent) {
+		this._events.emit(event);
+	}
+
 	json<T>(): Task<T> {
 		return <any> this.text().then(JSON.parse);
 	}
@@ -42,8 +46,11 @@ abstract class Response implements ResponseInterface {
 		return this._events.on(type, fn);
 	}
 
-	emit(event: ProgressEvent | DataEvent | EndEvent | StartEvent) {
-		this._events.emit(event);
+	xml(): Task<Document> {
+		return <any> this.text().then((text: string) => {
+			const parser = new DOMParser();
+			return parser.parseFromString(text, this.headers.get('content-type') || 'text/html');
+		});
 	}
 
 	abstract arrayBuffer(): Task<ArrayBuffer>;

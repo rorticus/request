@@ -48,36 +48,76 @@ export class FetchResponse extends Response {
 
 	arrayBuffer(): Task<ArrayBuffer> {
 		return new Task<ArrayBuffer>((resolve, reject) => {
-			this.nativeResponse.arrayBuffer().then(resolve, reject);
+			this.nativeResponse.arrayBuffer().then((arrayBuffer: ArrayBuffer) => {
+				this.emit({
+					type: 'end',
+					response: this
+				});
+
+				resolve(arrayBuffer);
+			}, reject);
 		});
 	}
 
 	blob(): Task<Blob> {
 		return new Task<Blob>((resolve, reject) => {
-			this.nativeResponse.blob().then(resolve, reject);
+			this.nativeResponse.blob().then((blob: Blob) => {
+				this.emit({
+					type: 'end',
+					response: this
+				});
+
+				resolve(blob);
+			}, reject);
 		});
 	}
 
 	formData(): Task<FormData> {
 		return new Task<FormData>((resolve, reject) => {
-			this.nativeResponse.formData().then(resolve, reject);
+			this.nativeResponse.formData().then((formData: FormData) => {
+				this.emit({
+					type: 'end',
+					response: this
+				});
+
+				resolve(formData);
+			}, reject);
 		});
 	}
 
 	json<T>(): Task<T> {
-		return new Task<any>((resolve, reject) => {
-			this.nativeResponse.json().then(resolve, reject);
+		return new Task<T>((resolve, reject) => {
+			this.nativeResponse.json().then((json: T) => {
+				this.emit({
+					type: 'end',
+					response: this
+				});
+
+				resolve(json);
+			}, reject);
 		});
 	}
 
 	text(): Task<string> {
 		return new Task<string>((resolve, reject) => {
-			this.nativeResponse.text().then(resolve, reject);
+			this.nativeResponse.text().then((text: string) => {
+				this.emit({
+					type: 'end',
+					response: this
+				});
+
+				resolve(text);
+			}, reject);
 		});
 	}
 
-	xml(): Task<any> {
-		return this.text().then((text: string) => {
+	xml(): Task<Document> {
+		return <any> this.text().then((text: string) => {
+			this.emit({
+				type: 'end',
+				response: this
+			});
+
 			const parser = new DOMParser();
 			return parser.parseFromString(text, this.headers.get('content-type') || 'text/html');
 		});
@@ -142,7 +182,14 @@ export default function fetchRequest(url: string, options?: FetchRequestOptions)
 		fetch(request).then((fetchResponse: any) => {
 			timeout && timeout.destroy();
 
-			resolve(new FetchResponse(requestUrl, requestOptions, fetchResponse));
+			const response = new FetchResponse(requestUrl, requestOptions, fetchResponse);
+
+			response.emit({
+				type: 'start',
+				response: response
+			});
+
+			resolve(response);
 		}, reject);
 
 		if (requestOptions.timeout > 0 && requestOptions.timeout !== Infinity) {
