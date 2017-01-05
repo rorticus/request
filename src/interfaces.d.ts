@@ -6,7 +6,6 @@ import { IterableIterator } from 'dojo-shim/iterator';
 
 export interface Body {
 	readonly bodyUsed: boolean;
-	downloadBody: boolean;
 
 	arrayBuffer(): Task<ArrayBuffer>;
 	blob(): Task<Blob>;

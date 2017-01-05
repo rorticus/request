@@ -26,8 +26,6 @@ abstract class Response extends Evented implements ResponseInterface {
 	abstract readonly bodyUsed: boolean;
 	readonly requestOptions: RequestOptions;
 
-	downloadBody: boolean = true;
-
 	emit(event: ProgressEvent | DataEvent | EndEvent | StartEvent) {
 		super.emit(event);
 	}

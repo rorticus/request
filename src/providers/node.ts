@@ -123,6 +123,8 @@ export class NodeResponse extends Response {
 	readonly status: number;
 	readonly statusText: string;
 
+	downloadBody: boolean = true;
+
 	get bodyUsed(): boolean {
 		return dataMap.get(this).used;
 	}
