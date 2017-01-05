@@ -33,7 +33,7 @@ import node from 'dojo-request/providers/node';
 request.setDefaultProvider(node);
 
 request.get('http://www.example.com').then(response => {
-    return response.html();
+    return response.text();
 }).then(html => {
     console.log(html);
 });
