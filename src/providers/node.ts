@@ -89,6 +89,9 @@ interface RequestData {
 	data: string;
 	size: number;
 	used: boolean;
+	nativeResponse: http.IncomingMessage;
+	requestOptions: NodeRequestOptions;
+	url: string;
 }
 
 const dataMap = new WeakMap<NodeResponse, RequestData>();
@@ -119,15 +122,24 @@ export class NodeResponse extends Response {
 	readonly ok: boolean;
 	readonly status: number;
 	readonly statusText: string;
-	readonly url: string;
-	readonly nativeResponse: http.IncomingMessage;
-	readonly requestOptions: NodeRequestOptions;
 
 	get bodyUsed(): boolean {
 		return dataMap.get(this).used;
 	}
 
-	constructor(url: string, options: NodeRequestOptions, response: http.IncomingMessage) {
+	get nativeResponse(): http.IncomingMessage {
+		return dataMap.get(this).nativeResponse;
+	}
+
+	get requestOptions(): NodeRequestOptions {
+		return dataMap.get(this).requestOptions;
+	}
+
+	get url(): string {
+		return dataMap.get(this).url;
+	}
+
+	constructor(response: http.IncomingMessage) {
 		super();
 
 		const headers = this.headers = new Headers();
@@ -148,12 +160,9 @@ export class NodeResponse extends Response {
 			}
 		}
 
-		this.requestOptions = options;
-		this.nativeResponse = response;
 		this.status = response.statusCode || 0;
 		this.ok = this.status >= 200 && this.status < 300;
 		this.statusText = response.statusMessage || '';
-		this.url = url;
 	}
 
 	arrayBuffer(): Task<ArrayBuffer> {
@@ -174,11 +183,6 @@ export class NodeResponse extends Response {
 	blob(): Task<Blob> {
 		// Node doesn't support Blobs
 		return Task.reject<Blob>(new Error('Blob not supported'));
-	}
-
-	xml(): Task<Document> {
-		// no xml parser in node
-		return Task.reject<Blob>(new Error('XML not supported'));
 	}
 
 	formData(): Task<FormData> {
@@ -290,7 +294,7 @@ export default function node(url: string, options: NodeRequestOptions = {}): Tas
 		}
 
 		request.once('response', (message: http.IncomingMessage) => {
-			const response = new NodeResponse(url, options, message);
+			const response = new NodeResponse(message);
 
 			// Redirection handling defaults to true in order to harmonise with the XHR provider, which will always
 			// follow redirects
@@ -440,7 +444,10 @@ export default function node(url: string, options: NodeRequestOptions = {}): Tas
 				buffer: [],
 				data: '',
 				size: 0,
-				used: false
+				used: false,
+				url: url,
+				requestOptions: options,
+				nativeResponse: message
 			};
 
 			dataMap.set(response, data);

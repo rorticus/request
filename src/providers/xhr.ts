@@ -22,6 +22,9 @@ export interface XhrRequestOptions extends RequestOptions {
 interface RequestData {
 	task: Task<XMLHttpRequest>;
 	used: boolean;
+	requestOptions: XhrRequestOptions;
+	nativeResponse: XMLHttpRequest;
+	url: string;
 }
 
 const dataMap = new WeakMap<XhrResponse, RequestData>();
@@ -46,15 +49,24 @@ export class XhrResponse extends Response {
 	readonly ok: boolean;
 	readonly status: number;
 	readonly statusText: string;
-	readonly url: string;
-	readonly requestOptions: XhrRequestOptions;
-	readonly nativeResponse: XMLHttpRequest;
 
 	get bodyUsed(): boolean {
 		return dataMap.get(this).used;
 	}
 
-	constructor(url: string, options: XhrRequestOptions, request: XMLHttpRequest) {
+	get nativeResponse(): XMLHttpRequest {
+		return dataMap.get(this).nativeResponse;
+	}
+
+	get requestOptions(): XhrRequestOptions {
+		return dataMap.get(this).requestOptions;
+	}
+
+	get url(): string {
+		return dataMap.get(this).url;
+	}
+
+	constructor(request: XMLHttpRequest) {
 		super();
 
 		const headers = this.headers = new Headers();
@@ -69,12 +81,9 @@ export class XhrResponse extends Response {
 			}
 		}
 
-		this.requestOptions = options;
 		this.status = request.status;
 		this.ok = this.status >= 200 && this.status < 300;
 		this.statusText = request.statusText || 'OK';
-		this.url = url;
-		this.nativeResponse = request;
 	}
 
 	arrayBuffer(): Task<ArrayBuffer> {
@@ -92,6 +101,13 @@ export class XhrResponse extends Response {
 	text(): Task<string> {
 		return <any> getDataTask(this).then((request: XMLHttpRequest) => {
 			return String(request.responseText);
+		});
+	}
+
+	xml(): Task<Document> {
+		return <any> this.text().then((text: string) => {
+			const parser = new DOMParser();
+			return parser.parseFromString(text, this.headers.get('content-type') || 'text/html');
 		});
 	}
 }
@@ -179,7 +195,7 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 			}
 
 			if (request.readyState === 2) {
-				const response = new XhrResponse(requestUrl, options, request);
+				const response = new XhrResponse(request);
 
 				const task = new Task<XMLHttpRequest>((resolve, reject) => {
 					request.onprogress = function (event: any) {
@@ -231,7 +247,10 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 
 				dataMap.set(response, {
 					task,
-					used: false
+					used: false,
+					nativeResponse: request,
+					requestOptions: options,
+					url: requestUrl
 				});
 
 				resolve(response);

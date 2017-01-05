@@ -2,11 +2,11 @@ import registerSuite from '../object';
 import * as assert from 'intern/chai!assert';
 import * as dojo1xhr from 'dojo/request/xhr';
 
-import request from '../../src/index';
+import request from '../../src/request';
 import xhr from '../../src/providers/xhr';
 
 import './providers/xhr';
-import './providers/fetch';
+
 import Response from '../../src/Response';
 
 interface EchoData {

@@ -2,7 +2,7 @@ import registerSuite from '../object';
 import * as assert from 'intern/chai!assert';
 
 import { Handle } from 'dojo-interfaces/core';
-import request, { Response, providerRegistry, Headers } from '../../src/index';
+import request, { Response, providerRegistry, Headers } from '../../src/main';
 import Task from 'dojo-core/async/Task';
 
 class MockResponse extends Response {

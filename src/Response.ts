@@ -46,13 +46,6 @@ abstract class Response implements ResponseInterface {
 		return this._events.on(type, fn);
 	}
 
-	xml(): Task<Document> {
-		return <any> this.text().then((text: string) => {
-			const parser = new DOMParser();
-			return parser.parseFromString(text, this.headers.get('content-type') || 'text/html');
-		});
-	}
-
 	abstract arrayBuffer(): Task<ArrayBuffer>;
 	abstract blob(): Task<Blob>;
 	abstract formData(): Task<FormData>;

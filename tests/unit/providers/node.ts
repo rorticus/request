@@ -542,16 +542,6 @@ registerSuite({
 						assert.isTrue(formData instanceof FormData);
 					});
 				});
-			},
-
-			'xml'() {
-				return nodeRequest(getRequestUrl('foo.json')).then((response: any) => {
-					return response.xml().then((blob: any) => {
-						assert.fail('should not have succeeded');
-					}, () => {
-						return true;
-					});
-				});
 			}
 		}
 	},
