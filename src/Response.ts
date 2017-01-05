@@ -9,8 +9,8 @@ import {
 import Headers from './Headers';
 import Evented from 'dojo-core/Evented';
 import Task from 'dojo-core/async/Task';
-import Promise from 'dojo-shim/Promise';
 import { EventObject, Handle } from 'dojo-interfaces/core';
+import Promise from 'dojo-shim/Promise';
 
 export interface ResponseData {
 	task: Task<any>;

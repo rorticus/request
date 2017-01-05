@@ -1,17 +1,20 @@
-import Task, { State } from 'dojo-core/async/Task';
-import WeakMap from 'dojo-shim/WeakMap';
-import { Handle } from 'dojo-interfaces/core';
-import { createTimer } from 'dojo-core/util';
+import has from '../has';
+import Headers from '../Headers';
 import { RequestOptions } from '../interfaces';
 import Response, { getArrayBufferFromBlob, getTextFromBlob } from '../Response';
-import Headers from '../Headers';
 import TimeoutError from '../TimeoutError';
-import has from '../has';
-import { forOf } from 'dojo-shim/iterator';
 import { generateRequestUrl } from '../util';
+import Task, { State } from 'dojo-core/async/Task';
 import global from 'dojo-core/global';
 import { queueTask } from 'dojo-core/queue';
+import { createTimer } from 'dojo-core/util';
+import { Handle } from 'dojo-interfaces/core';
+import { forOf } from 'dojo-shim/iterator';
+import WeakMap from 'dojo-shim/WeakMap';
 
+/**
+ * Request options specific to an XHR request
+ */
 export interface XhrRequestOptions extends RequestOptions {
 	blockMainThread?: boolean;
 }
@@ -35,6 +38,9 @@ function getDataTask(response: XhrResponse): Task<XMLHttpRequest> {
 	return data.task;
 }
 
+/**
+ * Wraps an XHR request in a response that mimics the fetch API
+ */
 export class XhrResponse extends Response {
 	readonly headers: Headers;
 	readonly ok: boolean;
@@ -146,7 +152,7 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 	}
 
 	if ((!options.user || !options.password) && options.auth) {
-		let auth = options.auth.split(':');
+		const auth = options.auth.split(':');
 		options.user = decodeURIComponent(auth[ 0 ]);
 		options.password = decodeURIComponent(auth[ 1 ]);
 	}
@@ -257,14 +263,11 @@ export default function xhr(url: string, options: XhrRequestOptions = {}): Task<
 
 	if (options.headers) {
 		const requestHeaders = new Headers(options.headers);
-		forOf(requestHeaders, ([key, value]) => {
-			if (key.toLowerCase() === 'content-type') {
-				hasContentTypeHeader = true;
-			}
-			else if (key.toLowerCase() === 'x-requested-with') {
-				hasRequestedWithHeader = true;
-			}
 
+		hasRequestedWithHeader = requestHeaders.has('x-requested-with');
+		hasContentTypeHeader = requestHeaders.has('content-type');
+
+		forOf(requestHeaders, ([key, value]) => {
 			request.setRequestHeader(key, value);
 		});
 	}

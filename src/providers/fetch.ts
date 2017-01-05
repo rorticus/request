@@ -1,26 +1,43 @@
-import { RequestOptions } from '../interfaces';
 import FetchHeaders from '../Headers';
+import { RequestOptions } from '../interfaces';
 import Response from '../Response';
-import TimeoutError from '../TimeoutError';
 import { generateRequestUrl } from '../util';
+import TimeoutError from '../TimeoutError';
+import Task from 'dojo-core/async/Task';
 import { Handle } from 'dojo-core/interfaces';
 import { createHandle } from 'dojo-core/lang';
-import Task from 'dojo-core/async/Task';
 import { forOf } from 'dojo-shim/iterator';
 
-export interface FetchRequestOptions extends RequestOptions {
-}
-
-declare class Request {
-	constructor(url: string, options?: any);
-}
-
+/**
+ * The Headers class used by the native fetch implementation. We only need to use one method on this
+ */
 declare class Headers {
 	append(name: string, value: string): void;
 }
 
+/**
+ * Special options just for fetch request. The fetch API supports a lot of cool stuff, CORS, authentication, etc,
+ * that would probably be passed in here.
+ */
+export interface FetchRequestOptions extends RequestOptions {
+}
+
+/**
+ * Request class used by the native fetch implementation
+ */
+declare class Request {
+	constructor(url: string, options?: any);
+}
+
+/**
+ * Fetch doesn't exist in the TS libs yet
+ */
 declare function fetch(_: any): any;
 
+/**
+ * A Response object that wraps a fetch Response. Since our response object is based on fetch
+ * this is mostly just a wrapper.
+ */
 export class FetchResponse extends Response {
 	readonly headers: FetchHeaders;
 	readonly ok: boolean;
@@ -124,6 +141,14 @@ export class FetchResponse extends Response {
 	}
 }
 
+/**
+ * Create a promise that will resolve with a fetch response. This will use the browsers native fetch API to make
+ * and HTTP request.
+ *
+ * @param url       {string}                The URL to request
+ * @param options   {FetchRequestOptions}   Options for this request
+ * @return {Task<FetchResponse>}
+ */
 export default function fetchRequest(url: string, options?: FetchRequestOptions): Task<FetchResponse> {
 	const fetchRequestOptions: any = {};
 	const fetchRequestHeaders: Headers = new Headers();
@@ -154,16 +179,7 @@ export default function fetchRequest(url: string, options?: FetchRequestOptions)
 	if (requestOptions.headers) {
 		const headers = new FetchHeaders(requestOptions.headers);
 
-		let hasContentTypeHeader = false;
-		let hasRequestedWithHeader = false;
-
 		forOf(headers.entries(), ([ header, value ]) => {
-			if (header.toLowerCase() === 'content-type') {
-				hasContentTypeHeader = true;
-			}
-			else if (header.toLowerCase() === 'x-requested-with') {
-				hasRequestedWithHeader = true;
-			}
 			fetchRequestHeaders.append(header.toLowerCase(), value);
 		});
 	}
@@ -174,7 +190,7 @@ export default function fetchRequest(url: string, options?: FetchRequestOptions)
 
 	fetchRequestOptions.headers = fetchRequestHeaders;
 
-	let request = new Request(requestUrl, fetchRequestOptions);
+	const request = new Request(requestUrl, fetchRequestOptions);
 
 	return new Task<FetchResponse>((resolve, reject) => {
 		let timeout: Handle;

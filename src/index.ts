@@ -1,6 +1,6 @@
 import { RequestOptions, Response, Provider } from './interfaces';
-import Task from 'dojo-core/async/Task';
 import ProviderRegistry from './ProviderRegistry';
+import Task from 'dojo-core/async/Task';
 
 export const providerRegistry = new ProviderRegistry();
 

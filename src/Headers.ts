@@ -1,6 +1,6 @@
+import { Headers as HeadersInterface } from './interfaces';
 import { IterableIterator, forOf, ShimIterator } from 'dojo-shim/iterator';
 import Map from 'dojo-shim/Map';
-import { Headers as HeadersInterface } from './interfaces';
 
 function isHeadersLike(object: any): object is HeadersInterface {
 	return typeof object.append === 'function' && typeof object.entries === 'function' && typeof object[Symbol.iterator] === 'function';

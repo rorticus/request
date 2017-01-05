@@ -1,22 +1,24 @@
-import Task from 'dojo-core/async/Task';
-import WeakMap from 'dojo-shim/WeakMap';
-import Set from 'dojo-shim/Set';
-import { Handle } from 'dojo-interfaces/core';
-import { createTimer } from 'dojo-core/util';
-import { RequestOptions } from '../interfaces';
-import Response from '../Response';
+import has from '../has';
 import Headers from '../Headers';
+import { RequestOptions } from '../interfaces';
+import Response, { getArrayBufferFromBlob } from '../Response';
 import TimeoutError from '../TimeoutError';
+import { getStringFromFormData } from '../util';
+import Task from 'dojo-core/async/Task';
+import global from 'dojo-core/global';
 import { queueTask } from 'dojo-core/queue';
+import { createTimer } from 'dojo-core/util';
+import { Handle } from 'dojo-interfaces/core';
+import Set from 'dojo-shim/Set';
+import WeakMap from 'dojo-shim/WeakMap';
 
 import * as http from 'http';
 import * as https from 'https';
 import * as urlUtil from 'url';
-import global from 'dojo-core/global';
-import has from '../has';
-import { getArrayBufferFromBlob } from '../Response';
-import { getStringFromFormData } from '../util';
 
+/**
+ * Request options specific to a node request
+ */
 export interface NodeRequestOptions extends RequestOptions {
 	agent?: any;
 	ca?: any;
@@ -45,10 +47,18 @@ export interface NodeRequestOptions extends RequestOptions {
 	};
 }
 
+// TODO: This should be read from the package and not hard coded!
 let version = '2.0.0-pre';
 
+/**
+ * If not overridden, redirects will only be processed this many times before aborting (per request).
+ * @type {number}
+ */
 const DEFAULT_REDIRECT_LIMIT = 15;
 
+/**
+ * Options to be passed to node's request
+ */
 interface Options {
 	agent?: any;
 	auth?: string;
@@ -62,6 +72,9 @@ interface Options {
 	socketPath?: string;
 }
 
+/**
+ * HTTPS specific options for node
+ */
 interface HttpsOptions extends Options {
 	ca?: any;
 	cert?: string;
@@ -80,8 +93,6 @@ interface RequestData {
 	size: number;
 	used: boolean;
 }
-
-// const USER_AGENT_STRING = `dojo-request/${require('../package.json').version} Node.js/${process.version.replace(/^v/, '')}`;
 
 const dataMap = new WeakMap<NodeResponse, RequestData>();
 const discardedDuplicates = new Set<string>([
@@ -103,6 +114,9 @@ function getDataTask(response: NodeResponse): Task<RequestData> {
 	return <Task<RequestData>> data.task.then(_ => data);
 }
 
+/**
+ * Turn a node native response object into something that resembles the fetch api
+ */
 export class NodeResponse extends Response {
 	readonly headers: Headers;
 	readonly ok: boolean;
@@ -229,11 +243,11 @@ export default function node(url: string, options: NodeRequestOptions = {}): Tas
 			requestOptions.headers[ 'proxy-authorization' ] = 'Basic ' + new Buffer(parsedUrl.auth).toString('base64');
 		}
 
-		let _parsedUrl = urlUtil.parse(url);
-		if (_parsedUrl.host) {
-			requestOptions.headers[ 'host' ] = _parsedUrl.host;
+		const parsedProxyUrl = urlUtil.parse(url);
+		if (parsedProxyUrl.host) {
+			requestOptions.headers[ 'host' ] = parsedProxyUrl.host;
 		}
-		requestOptions.auth = _parsedUrl.auth || options.auth;
+		requestOptions.auth = parsedProxyUrl.auth || options.auth;
 	}
 
 	if (!options.auth && (options.user || options.password)) {
@@ -448,13 +462,13 @@ export default function node(url: string, options: NodeRequestOptions = {}): Tas
 	}, () => {
 		request.abort();
 	}).catch(function (error: Error): any {
-		let parsedUrl = urlUtil.parse(url);
+		const parsedUrl = urlUtil.parse(url);
 
 		if (parsedUrl.auth) {
 			parsedUrl.auth = '(redacted)';
 		}
 
-		let sanitizedUrl = urlUtil.format(parsedUrl);
+		const sanitizedUrl = urlUtil.format(parsedUrl);
 
 		error.message = '[' + requestOptions.method + ' ' + sanitizedUrl + '] ' + error.message;
 		throw error;

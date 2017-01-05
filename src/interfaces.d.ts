@@ -1,8 +1,8 @@
-import { IterableIterator } from 'dojo-shim/iterator';
 import Task from 'dojo-core/async/Task';
 import UrlSearchParams from 'dojo-core/UrlSearchParams';
 import { ParamList } from 'dojo-core/UrlSearchParams';
 import { Handle } from 'dojo-interfaces/core';
+import { IterableIterator } from 'dojo-shim/iterator';
 
 export interface Body {
 	readonly bodyUsed: boolean;

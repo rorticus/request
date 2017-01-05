@@ -1,5 +1,5 @@
-import has, { add } from 'dojo-core/has';
 import global from 'dojo-core/global';
+import has, { add } from 'dojo-core/has';
 
 export * from 'dojo-core/has';
 export default has;

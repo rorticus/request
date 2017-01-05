@@ -20,7 +20,7 @@ export function generateRequestUrl(url: string,
 }
 
 export function getStringFromFormData(formData: any): string {
-	let fields: string[] = [];
+	const fields: string[] = [];
 
 	forOf(formData.keys(), (key: string) => {
 		fields.push(encodeURIComponent(key) + '=' + encodeURIComponent(formData.get(key)));

@@ -1,5 +1,5 @@
-import MatchRegistry, { Test } from 'dojo-core/MatchRegistry';
 import { Provider, ProviderTest } from './interfaces';
+import MatchRegistry, { Test } from 'dojo-core/MatchRegistry';
 import { Handle } from 'dojo-interfaces/core';
 
 export default class ProviderRegistry extends MatchRegistry<Provider> {
