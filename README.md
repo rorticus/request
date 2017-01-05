@@ -1,20 +1,87 @@
-# dojo-<< package-name >>
+# dojo-request
 
-<!-- TODO: change and uncomment
-[![Build Status](https://travis-ci.org/dojo/<< package-name >>.svg?branch=master)](https://travis-ci.org/dojo/<< package-name >>)
-[![codecov](https://codecov.io/gh/dojo/<< package-name >>/branch/master/graph/badge.svg)](https://codecov.io/gh/dojo/<< package-name >>)
-[![npm version](https://badge.fury.io/js/dojo-<< package-name >>.svg)](http://badge.fury.io/js/dojo-<< package-name >>)
--->
+[![Build Status](https://travis-ci.org/dojo/request.svg?branch=master)](https://travis-ci.org/dojo/request)
+[![codecov](https://codecov.io/gh/dojo/request/branch/master/graph/badge.svg)](https://codecov.io/gh/dojo/request)
+[![npm version](https://badge.fury.io/js/dojo-request.svg)](http://badge.fury.io/js/dojo-request)
 
-TODO: Replace with a description of this package
+Tools for making HTTP requests using an normalized API.
 
 ## Features
 
-TODO: Add sections on features of this package
+This module allows the consumer to make HTTP requests using Node, XMLHttpRequest, or the Fetch API. The details of
+these implementations are exposed through a common interface.
+
+With this module you can,
+
+* Easily make simple HTTP requests
+* Convert response bodies to common formats like text, json, or html
+* Access response headers of a request before the body is downloaded
+* Monitor progress of a request
+* Stream response data
 
 ## How do I use this package?
 
-TODO: Add appropriate usage and instruction guidelines
+### Quick Start
+
+To make simple GET requests, you must register your provider (node, fetch, or XHR) then make the request.  The overall
+format of the API resembles the [Fetch Standard](https://fetch.spec.whatwg.org/).
+
+```ts
+import request from 'dojo-request';
+import node from 'dojo-request/providers/node';
+
+request.setDefaultProvider(node);
+
+request.get('http://www.example.com').then(response => {
+    return response.html();
+}).then(html => {
+    console.log(html);
+});
+```
+
+Responses can be returned as an `ArrayBuffer`, `Blob`, XML document, JSON object, or text string.
+
+You can also easily send request data,
+
+```ts
+request.post('http://www.example.com', {
+    body: 'request data here'
+}).then(response => {
+    // ...
+});
+```
+
+## Advanced Usage
+
+### Reading Response Headers
+
+This approach allows for processing of response headers _before_ the response body is available.
+
+```ts
+request.get('http://www.example.com').then(response => {
+    const expectedSize = Number(response.headers.get('content-length') || 0);
+});
+```
+
+### Response Events
+
+`Response` objects also emit `start`, `end`, `progress`, and `data` events. You can use these events to monitor download progress
+or stream a response directly to a file.
+
+```ts
+request.get('http://www.example.com').then(response => {
+    response.on('progress', (event: ProgressEvent) => {
+        console.log(`Total downloaded: ${event.totalBytesDownloaded}`);
+    });
+
+    return response.blob();
+}).then(blob => {
+    // do something with the data
+});
+```
+
+Note that there are some caveats when using these events. XHR cannot stream data (a final `data` event is sent at the end however) and
+the fetch implementation cannot report progress or stream data (again, progress/data events are sent upon the conclusion of the response).
 
 ## How do I contribute?
 
@@ -44,9 +111,5 @@ or
 `grunt test:saucelabs`
 
 ## Licensing information
-
-TODO: If third-party code was used to write this library, make a list of project names and licenses here
-
-* [Third-party lib one](https//github.com/foo/bar) ([New BSD](http://opensource.org/licenses/BSD-3-Clause))
 
 © 2004–2016 Dojo Foundation & contributors. [New BSD](http://opensource.org/licenses/BSD-3-Clause) license.
